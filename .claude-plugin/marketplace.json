@@ -1,0 +1,5 @@
+{
+  "name": "effort-router",
+  "owner": { "name": "KappaMagna" },
+  "plugins": [{ "name": "effort-router", "source": "./" }]
+}

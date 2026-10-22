@@ -1,0 +1,8 @@
+{
+  "name": "effort-router",
+  "version": "0.1.0",
+  "description": "Sceglie da solo il livello di effort (low → max) per ogni prompt, in base a cosa chiedi",
+  "author": { "name": "KappaMagna", "url": "https://github.com/KappaMagna" },
+  "license": "MIT",
+  "types": "./types/index.d.ts"
+}
