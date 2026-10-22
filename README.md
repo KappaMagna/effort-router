@@ -1,5 +1,7 @@
 # effort-router
 
+![effort-router: not every prompt deserves the same effort](assets/cover.png)
+
 🇮🇹 [Italiano](#italiano) · 🇬🇧 [English](#english)
 
 ## Italiano
