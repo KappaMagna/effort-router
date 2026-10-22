@@ -1,8 +1,8 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { EffortChoice, RouterMode } from '../types'
-import { HAIKU_SYSTEM, classify, isLevel, readOverride } from './classify'
+import type { EffortChoice, Lang, RouterMode } from '../types'
+import { HAIKU_SYSTEM, classify, detectLang, isLevel, readOverride } from './classify'
 
 const COMMAND = 'effort-router'
 const MODES: readonly RouterMode[] = ['auto', 'smart', 'off']
@@ -13,7 +13,27 @@ const choice = atom({ plugin: 'effort-router', key: 'choice' } as const, null)
 const isMode = (value: string): value is RouterMode =>
   (MODES as readonly string[]).includes(value)
 
-const askHaiku = async ($: EngineInterface, text: string): Promise<EffortChoice | null> => {
+// I messaggi seguono la lingua dell'ultimo prompt; prima del primo, l'inglese.
+const TEXT = {
+  it: {
+    source: { rules: 'regole', haiku: 'haiku', manual: 'manuale' },
+    manual: 'scelto da te',
+    mode: (mode: RouterMode) => `Effort router: modalità ${mode}.`,
+    last: (c: EffortChoice) => `Ultima scelta: ${c.level} (${TEXT.it.source[c.source]}: ${c.reason}).`,
+    none: 'Nessuna scelta ancora.',
+    usage: 'Uso: /effort-router auto | smart | off — oppure inizia un prompt con !low, !medium, !high, !xhigh o !max.',
+  },
+  en: {
+    source: { rules: 'rules', haiku: 'haiku', manual: 'manual' },
+    manual: 'your choice',
+    mode: (mode: RouterMode) => `Effort router: ${mode} mode.`,
+    last: (c: EffortChoice) => `Last choice: ${c.level} (${TEXT.en.source[c.source]}: ${c.reason}).`,
+    none: 'No choice yet.',
+    usage: 'Usage: /effort-router auto | smart | off — or start a prompt with !low, !medium, !high, !xhigh or !max.',
+  },
+} as const
+
+const askHaiku = async ($: EngineInterface, text: string, lang: Lang): Promise<EffortChoice | null> => {
   const reply = await $.model.complete({
     model: 'haiku',
     system: HAIKU_SYSTEM,
@@ -30,7 +50,7 @@ const askHaiku = async ($: EngineInterface, text: string): Promise<EffortChoice 
     const { level, reason } = parsed as { level?: unknown; reason?: unknown }
 
     return typeof level === 'string' && isLevel(level)
-      ? { level, reason: typeof reason === 'string' ? reason : 'Haiku', source: 'haiku' }
+      ? { level, reason: typeof reason === 'string' ? reason : 'Haiku', source: 'haiku', lang }
       : null
   } catch {
     return null
@@ -63,19 +83,14 @@ export const register: Register = on => {
       if (arg === 'off') await update($, choice, () => null)
       showStatus($, arg, await read($, choice))
 
-      return { text: `Effort router: modalità ${arg}.` }
+      return { text: TEXT[(await read($, choice))?.lang ?? 'en'].mode(arg) }
     }
 
     const current = await read($, mode)
     const last = await read($, choice)
-    const lastLine = last ? `Ultima scelta: ${last.level} (${last.source}: ${last.reason}).` : 'Nessuna scelta ancora.'
+    const t = TEXT[last?.lang ?? 'en']
 
-    return {
-      text: [
-        `Effort router: modalità ${current}. ${lastLine}`,
-        'Uso: /effort-router auto | smart | off — oppure inizia un prompt con !low, !medium, !high, !xhigh o !max.',
-      ].join('\n'),
-    }
+    return { text: [`${t.mode(current)} ${last ? t.last(last) : t.none}`, t.usage].join('\n') }
   })
 
   on('prompt.submit', async ($, e, next) => {
@@ -91,11 +106,12 @@ export const register: Register = on => {
     const override = readOverride(e.text)
     if (current === 'off' && !override) return next(e)
 
+    const lang = detectLang(override?.text ?? e.text)
     let picked: EffortChoice
     if (override) {
-      picked = { level: override.level, reason: 'scelto da te', source: 'manuale' }
+      picked = { level: override.level, reason: TEXT[lang].manual, source: 'manual', lang }
     } else {
-      picked = (current === 'smart' ? await askHaiku($, e.text) : null) ?? classify(e.text)
+      picked = (current === 'smart' ? await askHaiku($, e.text, lang) : null) ?? classify(e.text, lang)
     }
 
     await update($, choice, () => picked)
@@ -119,7 +135,7 @@ export const register: Register = on => {
 
     return (
       <Text dimColor>
-        ⚡ Effort {picked.level} · {picked.source}: {picked.reason}
+        ⚡ Effort {picked.level} · {TEXT[picked.lang].source[picked.source]}: {picked.reason}
       </Text>
     )
   })

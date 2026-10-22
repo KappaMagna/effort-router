@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { classify, readOverride } from './classify'
+import { classify, detectLang, readOverride } from './classify'
 
 test('le regole scelgono un livello sensato', async () => {
   expect(classify('ciao!').level).toBe('low')
@@ -38,4 +38,12 @@ test('il turno del loop principale usa l’effort scelto, i subagent no', async 
   for await (const _ of $.turn.step({ turnId: 't1', index: 0, model: 'opus', effort: 'medium', messageCount: 1 }));
   for await (const _ of $.turn.step({ turnId: 't1', index: 1, model: 'opus', effort: 'medium', messageCount: 2, agentId: 'a1' }));
   expect(sent).toEqual(['max', 'medium'])
+})
+
+test('i motivi seguono la lingua del prompt', async () => {
+  expect(detectLang('rifai la pagina dei contatti con un form che funziona')).toBe('it')
+  expect(detectLang('fix the contact form on my page')).toBe('en')
+  expect(classify('fix the bug in the contact form').reason).toBe('code work')
+  expect(classify('correggi il bug nel form dei contatti').reason).toBe('lavoro sul codice')
+  expect(classify('rebuild the whole project from scratch').level).toBe('xhigh')
 })

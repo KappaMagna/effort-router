@@ -13,7 +13,7 @@ Mod per Claude Code che sceglie da solo il livello di effort (low, medium, high,
 Comandi: `/effort-router auto | smart | off`, oppure `/effort-router` da solo per vedere lo stato.
 Per forzare un singolo prompt, inizialo con `!low`, `!medium`, `!high`, `!xhigh` o `!max` (il prefisso viene tolto prima di mandarlo al modello).
 
-Vale solo per il loop principale: i subagent mantengono il loro effort. La scelta compare nella status line e in una riga sopra il prompt.
+Vale solo per il loop principale: i subagent mantengono il loro effort. La scelta compare nella status line e in una riga sopra il prompt. I messaggi seguono la lingua del prompt (italiano o inglese).
 
 ### Installazione
 
@@ -42,7 +42,7 @@ A Claude Code mod that picks the effort level (low, medium, high, xhigh, max) fo
 Commands: `/effort-router auto | smart | off`, or `/effort-router` alone to see the current state.
 To force a single prompt, start it with `!low`, `!medium`, `!high`, `!xhigh` or `!max` (the prefix is removed before the prompt reaches the model).
 
-It applies to the main loop only: subagents keep their own effort. The choice shows in the status line and in a line above the prompt (the reason labels are in Italian, e.g. "lavoro sul codice" = code work).
+It applies to the main loop only: subagents keep their own effort. The choice shows in the status line and in a line above the prompt. Messages follow the language of your prompt (English or Italian).
 
 ### Installation
 
